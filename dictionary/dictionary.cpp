@@ -5,16 +5,6 @@
 #include <algorithm>
 #include <string>
 
-
-struct CompareSecond
-{
-    bool operator()(const std::pair<std::string, int>& left, 
-        const std::pair<std::string, int>& right) const
-    {
-        return  right.second > left.second;
-    }
-};
-
 class Dictionary {
     std::string path;
     std::ifstream file;
@@ -22,7 +12,6 @@ class Dictionary {
     std::map<std::string, int> dictionary;
     std::vector<std::string> words;
     std::string word;
-    int cntWords = 0;
 protected:
     void OpenFile(const std::string& path) {
         this->path = path;
@@ -36,6 +25,7 @@ protected:
 
     void AllWords() {
         dictionary.clear();
+
         while (file >> word) {
             if (ispunct(static_cast<unsigned char>(word.back())))
                 word.erase(word.end() - 1);
@@ -50,28 +40,9 @@ protected:
             return;
         }
 
-        file.clear();
-        file.seekg(0, std::ios::beg);
-        std::string text((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-        std::transform(text.begin(),
-            text.end(),
-            text.begin(),
-            [](unsigned char const& c) {
-                return ::tolower(c);
-            });
 
         for (int ii = 0; ii < words.size(); ii++) {
-            cntWords = 0;
-            if(dictionary.insert(make_pair(words[ii], cntWords)).second) {
-                for (size_t y{}; y <= text.length() - words[ii].length();) {
-                    size_t position = text.find(words[ii], y);
-                    if (position == std::string::npos) {
-                        break;
-                    }
-                    ++dictionary[words[ii]];
-                    y = position + 1;
-                }
-            }
+            dictionary[words[ii]]++;
         }
         
         std::cout << std::endl;
@@ -87,10 +58,11 @@ protected:
             std::cout << "Словарь пуст\n" << std::endl;
             return;
         }
-        std::pair<std::string, int> max = 
-            *max_element(dictionary.begin(), dictionary.end(), CompareSecond());
+        auto max =
+            std::max_element(dictionary.begin(), dictionary.end(), [](auto& left,
+                auto& right) {return left.second < right.second; });
         std::cout << std::endl;
-        std::cout << "Наиболее часто встречающиеся слово: " << max.first << ":" << max.second << std::endl;
+        std::cout << "Наиболее часто встречающиеся слово: " << max->first << ":" << max->second << std::endl;
     }
 
     void SaveDictionary() {
@@ -126,9 +98,7 @@ protected:
 
 class Menu : public Dictionary {
     std::string path;
-    std::string word;
-    int choice = 0;
-    int count = 0;
+    int choice = 0;  
 public:
     void Show() {
         std::cout << "Введите путь к тексту"<<std::endl;
